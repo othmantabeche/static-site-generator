@@ -1,4 +1,5 @@
 from enum import Enum
+import re
 
 from LeafNode import LeafNode
 
@@ -66,28 +67,40 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 def split_nodes_image(old_nodes):
     new_nodes = []
     for node in old_nodes:
-        if node.text_type == TextType.IMAGE:
-            split_text = node.text.split()
-            for text in split_text:
-                if text.startswith("!"):
-                    new_nodes.append(TextNode(text, TextType.IMAGE, url=node.url))
-                else:
-                    new_nodes.append(TextNode(text, TextType.TEXT))
-        else:
+        if node.text_type != TextType.TEXT:
             new_nodes.append(node)
+            continue
+
+        current_index = 0
+        for match in re.finditer(r"!\[([^\]]*)\]\(([^)]+)\)", node.text):
+            if match.start() > current_index:
+                new_nodes.append(
+                    TextNode(node.text[current_index : match.start()], TextType.TEXT)
+                )
+            new_nodes.append(TextNode(match.group(1), TextType.IMAGE, match.group(2)))
+            current_index = match.end()
+
+        if current_index < len(node.text):
+            new_nodes.append(TextNode(node.text[current_index:], TextType.TEXT))
     return new_nodes
 
 
 def split_nodes_link(old_nodes):
     new_nodes = []
     for node in old_nodes:
-        if node.text_type == TextType.LINK:
-            split_text = node.text.split()
-            for text in split_text:
-                if text.startswith("[") and text.endswith("]"):
-                    new_nodes.append(TextNode(text, TextType.LINK, url=node.url))
-                else:
-                    new_nodes.append(TextNode(text, TextType.TEXT))
-        else:
+        if node.text_type != TextType.TEXT:
             new_nodes.append(node)
+            continue
+
+        current_index = 0
+        for match in re.finditer(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)", node.text):
+            if match.start() > current_index:
+                new_nodes.append(
+                    TextNode(node.text[current_index : match.start()], TextType.TEXT)
+                )
+            new_nodes.append(TextNode(match.group(1), TextType.LINK, match.group(2)))
+            current_index = match.end()
+
+        if current_index < len(node.text):
+            new_nodes.append(TextNode(node.text[current_index:], TextType.TEXT))
     return new_nodes
