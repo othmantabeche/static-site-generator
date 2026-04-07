@@ -24,7 +24,7 @@ This is a **test**.
             with open(template_path, "w") as template_file:
                 template_file.write(template)
 
-            generate_page(from_path, template_path, dest_path)
+            generate_page(from_path, template_path, dest_path, "/")
 
             self.assertTrue(os.path.exists(dest_path))
             with open(dest_path, "r") as output_file:

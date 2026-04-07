@@ -29,7 +29,7 @@ class TestGeneratePagesRecursive(unittest.TestCase):
             with open(template_path, "w") as template_file:
                 template_file.write(template)
 
-            generate_pages_recursive(content_dir, template_path, dest_dir)
+            generate_pages_recursive(content_dir, template_path, dest_dir, "/")
 
             root_output_path = os.path.join(dest_dir, "index.html")
             nested_output_path = os.path.join(dest_dir, "blog", "post.html")
