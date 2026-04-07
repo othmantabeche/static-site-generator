@@ -1,15 +1,19 @@
 from enum import Enum
 
+from LeafNode import LeafNode
 
-class Bender(Enum):
-    AIR_BENDER = "air"
-    WATER_BENDER = "water"
-    EARTH_BENDER = "earth"
-    FIRE_BENDER = "fire"
+
+class TextType(Enum):
+    TEXT = "text"
+    BOLD = "bold"
+    ITALIC = "italic"
+    CODE = "code"
+    LINK = "link"
+    IMAGE = "image"
 
 
 class TextNode:
-    def __init__(self, text, text_type, url):
+    def __init__(self, text, text_type, url=None):
         self.text = text  # The text content of the node
         self.text_type = text_type  # The type of text this node contains, which is a member of the TextType enum.
         self.url = url  # The URL of the link or image, if the text is a link. Default to None if nothing is passed in.
@@ -24,4 +28,66 @@ class TextNode:
         )
 
     def __repr__(self):
-        return f"TextNode({self.text}, {self.text_type}, {self.url})"
+        return f"TextNode({self.text!r}, {self.text_type!r}, {self.url!r})"
+
+
+def text_node_to_html_node(text_node):
+    if text_node.text_type == TextType.TEXT:
+        return LeafNode(tag=None, value=text_node.text)
+    elif text_node.text_type == TextType.BOLD:
+        return LeafNode(tag="b", value=text_node.text)
+    elif text_node.text_type == TextType.ITALIC:
+        return LeafNode(tag="i", value=text_node.text)
+    elif text_node.text_type == TextType.CODE:
+        return LeafNode(tag="code", value=text_node.text)
+    elif text_node.text_type == TextType.LINK:
+        return LeafNode(tag="a", value=text_node.text, props={"href": text_node.url})
+    elif text_node.text_type == TextType.IMAGE:
+        return LeafNode(tag="img", value="", props={"src": text_node.url})
+    else:
+        raise ValueError(f"Unsupported text type: {text_node.text_type}")
+
+
+def split_nodes_delimiter(old_nodes, delimiter, text_type):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type == text_type:
+            split_text = node.text.split(delimiter)
+            for i, text in enumerate(split_text):
+                if text:
+                    new_nodes.append(TextNode(text, text_type))
+                if i < len(split_text) - 1:
+                    new_nodes.append(TextNode(delimiter, TextType.TEXT))
+        else:
+            new_nodes.append(node)
+    return new_nodes
+
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type == TextType.IMAGE:
+            split_text = node.text.split()
+            for text in split_text:
+                if text.startswith("!"):
+                    new_nodes.append(TextNode(text, TextType.IMAGE, url=node.url))
+                else:
+                    new_nodes.append(TextNode(text, TextType.TEXT))
+        else:
+            new_nodes.append(node)
+    return new_nodes
+
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type == TextType.LINK:
+            split_text = node.text.split()
+            for text in split_text:
+                if text.startswith("[") and text.endswith("]"):
+                    new_nodes.append(TextNode(text, TextType.LINK, url=node.url))
+                else:
+                    new_nodes.append(TextNode(text, TextType.TEXT))
+        else:
+            new_nodes.append(node)
+    return new_nodes
