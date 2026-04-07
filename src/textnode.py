@@ -1,5 +1,5 @@
-from enum import Enum
 import re
+from enum import Enum
 
 from LeafNode import LeafNode
 
@@ -52,15 +52,30 @@ def text_node_to_html_node(text_node):
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     new_nodes = []
     for node in old_nodes:
-        if node.text_type == text_type:
-            split_text = node.text.split(delimiter)
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+
+        split_text = node.text.split(delimiter)
+
+        if text_type == TextType.TEXT:
             for i, text in enumerate(split_text):
                 if text:
                     new_nodes.append(TextNode(text, text_type))
                 if i < len(split_text) - 1:
                     new_nodes.append(TextNode(delimiter, TextType.TEXT))
-        else:
-            new_nodes.append(node)
+            continue
+
+        if len(split_text) % 2 == 0:
+            raise ValueError(f"Invalid markdown syntax for delimiter: {delimiter}")
+
+        for i, part in enumerate(split_text):
+            if not part:
+                continue
+            if i % 2 == 0:
+                new_nodes.append(TextNode(part, TextType.TEXT))
+            else:
+                new_nodes.append(TextNode(part, text_type))
     return new_nodes
 
 
@@ -72,7 +87,9 @@ def split_nodes_image(old_nodes):
             continue
 
         current_index = 0
-        for match in re.finditer(r"!\[([^\]]*)\]\(([^)]+)\)", node.text):
+        for match in re.finditer(
+            r"!\[([^\]]*)\]\(([^)]+)\)", node.text
+        ):  # the regex is in the extract_markdown_links
             if match.start() > current_index:
                 new_nodes.append(
                     TextNode(node.text[current_index : match.start()], TextType.TEXT)
@@ -93,7 +110,9 @@ def split_nodes_link(old_nodes):
             continue
 
         current_index = 0
-        for match in re.finditer(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)", node.text):
+        for match in re.finditer(
+            r"(?<!!)\[([^\]]*)\]\(([^)]+)\)", node.text
+        ):  # the regex is in the extract_markdown_links
             if match.start() > current_index:
                 new_nodes.append(
                     TextNode(node.text[current_index : match.start()], TextType.TEXT)
@@ -104,3 +123,13 @@ def split_nodes_link(old_nodes):
         if current_index < len(node.text):
             new_nodes.append(TextNode(node.text[current_index:], TextType.TEXT))
     return new_nodes
+
+
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    return nodes
