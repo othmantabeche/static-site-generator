@@ -1,29 +1,10 @@
-from HTMLNode import HTMLNode
-from LeafNode import LeafNode
-from ParentNode import ParentNode
-from TextNode import TextNode
+from copy_directory import copy_directory
+from generate_page import generate_pages_recursive
 
 
 def main():
-    text_node = TextNode("This is some anchor text", "link", "https://www.boot.dev")
-    print(repr(text_node))
-    print("**************************************")
-    html_node = HTMLNode(
-        tag="a",
-        value="This is some anchor text",
-        props={"href": "https://www.boot.dev"},
-    )
-    print(repr(html_node))
-    print("**************************************")
-    leaf_node = LeafNode(
-        tag="a",
-        value="This is some anchor text",
-        props={"href": "https://www.boot.dev"},
-    )
-    print(repr(leaf_node))
-    print("**************************************")
-    parent_node = ParentNode(tag="p", children=[leaf_node], props=None)
-    print(repr(parent_node))
+    copy_directory("./static", "./public")
+    generate_pages_recursive("./content", "./template.html", "./public")
 
 
 if __name__ == "__main__":
